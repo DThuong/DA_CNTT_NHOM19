@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+button.slick-next {
+  right: 80px;
+  z-index: 10;
+}
+
+button.slick-prev {
+  left: 20px;
+  z-index: 10;
+}
+
+button.slick-next::before {
+  color: gray;
+  content: "\276f";
+  background-color: #ffd3d3;
+  width: 80px;
+  height: 80px;
+  font-size: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+button.slick-prev::before {
+  color: gray;
+  content: "\276e";
+  background-color: #ffd3d3;
+  width: 80px;
+  height: 80px;
+  font-size: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-slider {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.custom-slider .custom-slider-image {
+  width: 100%;
+  height: auto;
+  transition: transform 0.3s ease;
+  margin: 0 5px;
+}
+
+.custom-slider .custom-slider-image:hover {
+  transform: scale(1.1);
+}
+
+/* Tùy chỉnh các nút điều hướng */
+.slick-prev,
+.slick-next {
+  background-color: transparent;
+  border: none;
+  font-size:0.5rem;
+  z-index: 10;
+}
+
+/* responsive */
+.my-masonry-grid {
+  display: -webkit-box; /* Not needed if autoprefixing */
+  display: -ms-flexbox; /* Not needed if autoprefixing */
+  display: flex;
+  margin-left: -12px; /* gutter size offset */
+  width: auto;
+}
+.my-masonry-grid_column {
+  padding-left: 12px; /* gutter size */
+  background-clip: padding-box;
+}
+
+/* Style your items */
+.my-masonry-grid_column > div { /* change div to reference your elements you put in <Masonry> */
+  margin-bottom: 30px;
+}

@@ -1,0 +1,8 @@
+### insert product data
+POST http://localhost:5000/api/insert/
+
+### insert product category data
+POST http://localhost:5000/api/insert/cate
+
+### insert user sample data (admin: admin@gmail.com and password: 123456)
+POST http://localhost:5000/api/user/createusers
