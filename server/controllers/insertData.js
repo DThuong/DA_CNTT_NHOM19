@@ -27,7 +27,7 @@ const fn = async (product) => {
     images: product?.images,
     color: color,
     thumb: product?.thumb,
-    totalRating: Math.round(Math.random() * 5)
+    totalRating: 0
   });
 };
 const insertProduct = asyncHandler(async (req, res) => {

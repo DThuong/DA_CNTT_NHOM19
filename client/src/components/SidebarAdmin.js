@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import logo from "../assets/logo.png";
 import { adminSidebar } from "../utils/contants";
 import { NavLink } from "react-router-dom";
+import path from "../utils/path";
 
 const SidebarAdmin = () => {
   const [activeParent, setActiveParent] = useState(null); // Lưu trữ trạng thái parent đang mở
@@ -73,6 +74,14 @@ const SidebarAdmin = () => {
           </div>
         ))}
       </div>
+
+      {/* Back to homepage link */}
+      <NavLink
+        to={path.PUBLIC} // Sử dụng path.HOME để chuyển hướng về trang chủ
+        className="block px-4 py-2 mt-4 text-center text-white hover:underline rounded-md"
+      >
+        Back to homepage
+      </NavLink>
     </div>
   );
 };

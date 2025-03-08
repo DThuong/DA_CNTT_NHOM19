@@ -21,6 +21,9 @@ export const userSlice = createSlice({
       state.token = null;
       state.isLoading = false;
     },
+    updateCart: (state, action) => {
+      
+    }
   },
   extraReducers: (builder) => {
     builder.addCase(actions.getCurrent.pending, (state) => {

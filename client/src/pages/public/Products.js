@@ -1,17 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
-import {
-  useParams,
-  useSearchParams,
-  useNavigate,
-  createSearchParams,
-} from "react-router-dom";
+import { useParams, useSearchParams, useNavigate, createSearchParams } from "react-router-dom";
 import { Breadcrumb } from "../../components";
 import { apigetProduct } from "../../apis";
 import { Product, SearchItems } from "../../components";
 import Masonry from "react-masonry-css";
-import { colors } from "../../utils/contants";
+import { colors, sorts } from "../../utils/contants";
 import { InputSelect } from "../../components";
-import { sorts } from "../../utils/contants";
 
 const breakpointColumnsObj = {
   default: 4,
@@ -29,115 +23,118 @@ const validCategories = [
   "printer",
   "speaker",
   "camera",
-  ":category",
 ];
 
 const Products = () => {
   const { category } = useParams();
-  const [products, setproducts] = useState(null);
-  const [sort, setSort] = useState("");
-  const [activeClick, setActiveClick] = useState(null);
-  const [filters, setFilters] = useState({ colors: [] });
+  const [products, setProducts] = useState([]); // Khởi tạo với mảng rỗng
+  const [sort, setSort] = useState(""); // Sắp xếp
+  const [activeClick, setActiveClick] = useState(null); // Bộ lọc
+  const [filters, setFilters] = useState({ colors: [] }); // Lọc theo màu sắc
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams(); // Sử dụng useSearchParams để lấy các tham số query hiện tại
+  const [params] = useSearchParams();
   const readableCategory = category?.split("-").join("") || "Product List";
 
+  // Fetch products by category and query params
   const fetchProductByCategory = async (queries) => {
-    const res = await apigetProduct({ ...queries, category: readableCategory });
-    if (res.success) {
-      setproducts(res.products);
+    const limit = queries.limit || 50; // Set a default limit
+
+    try {
+      const res = await apigetProduct({ ...queries, category: readableCategory, limit });
+
+      if (res.success && Array.isArray(res.products)) {
+        setProducts(res.products);
+      } else {
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setProducts([]);
     }
   };
 
-  // Sử dụng useEffect để lấy tham số từ URL và gọi API
+  // Fetch data on mount or when query params change
   useEffect(() => {
     if (!validCategories.includes(readableCategory)) {
-      // Nếu không hợp lệ, điều hướng tới trang NotFound
       navigate("/404", { replace: true });
-      return; // Thoát khỏi useEffect
+      return;
     }
-    const queries = {};
 
-    // Lấy các tham số hiện tại từ URL (search params)
+    const queries = {};
     for (let [key, value] of params.entries()) {
       queries[key] = value;
     }
 
-    // Gọi API với các query hiện tại
     fetchProductByCategory(queries);
-  }, [params]); // Khi params thay đổi, gọi lại API
+  }, [params, readableCategory, navigate]);
 
+  // Toggle active filter
   const changeActiveFilter = useCallback(
     (name) => {
-      if (activeClick === name) setActiveClick(null);
-      else setActiveClick(name);
+      setActiveClick(activeClick === name ? null : name);
     },
     [activeClick]
   );
 
+  // Handle filter change (e.g., colors)
   const handleFilterChange = (name, selectedOptions) => {
     setFilters((prev) => {
       const updatedFilters = { ...prev, [name.toLowerCase()]: selectedOptions };
-  
-      // Tạo URLSearchParams, giữ lại các tham số cũ, và thêm bộ lọc mới
+
       const newParams = new URLSearchParams(params);
-  
       if (selectedOptions.length > 0) {
         newParams.set("color", selectedOptions.join(","));
       } else {
-        newParams.delete("color"); // Nếu không có bộ lọc, xóa tham số này
+        newParams.delete("color");
       }
-  
-      // Cập nhật URL
+
       navigate({
         pathname: `/${readableCategory}`,
         search: newParams.toString(),
       });
-  
+
       return updatedFilters;
     });
   };
-  
-  
+
+  // Handle sorting
   const changeValue = useCallback(
     (e) => {
-      setSort(e);
+      setSort(e);  // Cập nhật giá trị sort trong state
     },
     [sort]
   );
 
+  // Fetch data and update URL when filters or sort change
   useEffect(() => {
-    // Tạo đối tượng queries kết hợp từ các params hiện tại và filters
     const queries = { ...params, ...filters, sort };
-  
-    // Gọi API với các tham số (cả filter và sort)
     fetchProductByCategory(queries);
-  
-    // Cập nhật URL với các tham số mới (filter + sort)
+
+    // Update the URL with new query params
     navigate({
       pathname: `/${readableCategory}`,
       search: createSearchParams(queries).toString(),
     });
-  }, [filters, sort, params, readableCategory, navigate]);  // Đảm bảo là có cả filters và sort trong phụ thuộc
-  
-  
+  }, [filters, sort, params, readableCategory, navigate]);
 
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    const newParams = new URLSearchParams(params);
+    newParams.set("limit", newLimit);  // Update limit in query parameters
+
+    navigate({
+      pathname: `/${readableCategory}`,
+      search: newParams.toString(),
+    });
+  };
 
   return (
     <div className="w-full">
       <div className="h-[81px] bg-gray-100 flex items-center justify-center">
         <div className="w-main">
-          <h3>
-            {readableCategory.includes(":category")
-              ? "Products"
-              : readableCategory}
-          </h3>
+          <h3>{readableCategory === "Product List" ? "Products" : readableCategory}</h3>
           <Breadcrumb
-            category={
-              readableCategory.includes(":category")
-                ? "Products"
-                : readableCategory
-            }
+            category={readableCategory === "Product List" ? "Products" : readableCategory}
           />
         </div>
       </div>
@@ -165,17 +162,22 @@ const Products = () => {
           </div>
         </div>
       </div>
+
       <div className="mt-8 w-main m-auto">
         <Masonry
           breakpointCols={breakpointColumnsObj}
           className="my-masonry-grid"
           columnClassName="my-masonry-grid_column"
         >
-          {products?.map((el) => (
-            <div key={el._id}>
-              <Product product={el} />
-            </div>
-          ))}
+          {Array.isArray(products) && products.length > 0 ? (
+            products.map((el) => (
+              <div key={el._id}>
+                <Product product={el} />
+              </div>
+            ))
+          ) : (
+            <div className="text-center">No products available</div>
+          )}
         </Masonry>
       </div>
       <div className="w-full h-[500px]"></div>

@@ -2,7 +2,7 @@ const ProductCategory = require('../models/productCategory')
 const asyncHandler = require('express-async-handler')
 
 const getAllProductCategory = asyncHandler(async (req, res) => {
-    const category = await ProductCategory.find().select('title _id')
+    const category = await ProductCategory.find().select('title _id brand')
     res.status(200).json({success: category ? true : false, 
         category: category ? category : "cannot find product category"
     })

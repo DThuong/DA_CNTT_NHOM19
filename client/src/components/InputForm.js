@@ -1,4 +1,5 @@
-import React from "react";
+import React, { memo } from "react";
+import clsx from "clsx";
 
 const InputForm = ({
   label,
@@ -8,6 +9,9 @@ const InputForm = ({
   error,
   defaultValue,
   rules,
+  placeholder,
+  style,
+  textarea
 }) => {
   return (
     <div className="mb-4">
@@ -17,18 +21,27 @@ const InputForm = ({
       >
         {label}
       </label>
-      <input
-        id={name}
-        type={type}
-        defaultValue={defaultValue}
-        {...register(name, rules)} // Áp dụng quy tắc validate
-        className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
-          error ? "border-red-500" : ""
-        }`}
-      />
+      {textarea ? (
+        <textarea
+          id={name}
+          name={name}
+          placeholder={placeholder}
+          {...register(name, rules)}
+          className="w-full p-2 border rounded-md"
+        />
+      ) : (
+        <input
+          id={name}
+          name={name}
+          type="text"
+          placeholder={placeholder}
+          {...register(name, rules)}
+          className="w-full p-2 border rounded-md"
+        />
+      )}
       {error && <p className="text-red-500 text-xs italic">{error.message}</p>}
     </div>
   );
 };
 
-export default InputForm;
+export default memo(InputForm);

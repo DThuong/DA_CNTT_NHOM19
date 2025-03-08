@@ -5,11 +5,13 @@ import { Link } from "react-router-dom";
 import path from "../utils/path";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../store/user/userSlice";
+import { showCart } from "../store/app/appSlice";
 
 const { FaUserCircle, FaShoppingCart } = icons;
 
 const Header = () => {
   const { current } = useSelector((state) => state.user);
+  const { isShowCart } = useSelector((state) => state.app); 
   const [isShowOption, setIsShowOption] = useState(false);
   const dispatch = useDispatch();
   const dropdownRef = useRef(null);
@@ -32,6 +34,10 @@ const Header = () => {
     setIsShowOption(false);
   };
 
+  const handleOpenCart = () => {
+    dispatch(showCart({ signal: true }));  // Gọi action để mở giỏ hàng
+  };
+
   return (
     <div className="w-main bg-white shadow-md">
       <div className="w-main mx-auto flex justify-between items-center h-[80px] py-[20px]">
@@ -49,9 +55,9 @@ const Header = () => {
         {/* Cart and Profile */}
         <div className="flex items-center space-x-6">
           {/* Cart */}
-          <div className="flex items-center gap-2 cursor-pointer">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={handleOpenCart}>
             <FaShoppingCart size={24} color="red" />
-            <span>Items (0)</span>
+            <span>{`${current?.cart?.length || 0} items`}</span>
           </div>
 
           {/* Profile */}

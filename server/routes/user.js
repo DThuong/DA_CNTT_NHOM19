@@ -20,7 +20,7 @@ router.delete(
 );
 router.put("/current", [verifyAccessToken], uploader.single('avatar'),userControllers.updateUserById);
 router.put("/address/", [verifyAccessToken], userControllers.updateUserAddress);
-router.put("/cart/", [verifyAccessToken], userControllers.updateCartUser);
+router.put("/cart", [verifyAccessToken], userControllers.updateCartUser);
 router.delete("/remove-cart/:pid", [verifyAccessToken], userControllers.removeProductInCart)
 router.put("/blockuserbyadmin/:uid", userControllers.blockUserById);
 router.put(

@@ -1,12 +1,13 @@
-import React, { useState , memo} from "react";
-import avatar from "../assets/default-avatar.png"
+import React, { useState, memo } from "react";
+import avatar from "../assets/default-avatar.png";
 import { memberSidebar } from "../utils/contants";
 import { NavLink } from "react-router-dom";
-import {useSelector} from "react-redux"
+import { useSelector } from "react-redux";
+import path from "../utils/path";
 
 const MemberSidebar = () => {
   const [activeParent, setActiveParent] = useState(null); // Lưu trữ trạng thái parent đang mở
-    const {current} =  useSelector(state => state.user)
+  const { current } = useSelector((state) => state.user);
   // Hàm toggle submenu
   const handleToggleSubmenu = (id) => {
     setActiveParent((prev) => (prev === id ? null : id)); // Đóng/mở submenu
@@ -16,7 +17,11 @@ const MemberSidebar = () => {
     <div className="bg-red-400 min-h-screen w-[327px] text-white">
       {/* Header Logo */}
       <div className="flex justify-center items-center flex-col py-4 gap-2">
-        <img src={current?.avatar || avatar} alt="logo" className="w-[200px] h-[200] object-cover border rounded-full" />
+        <img
+          src={current?.avatar || avatar}
+          alt="avatar"
+          className="w-[200px] h-[200px] object-cover border rounded-full"
+        />
         <span className="font-bold text-lg">{`${current?.firstname} ${current?.lastname}`}</span>
       </div>
 
@@ -74,6 +79,13 @@ const MemberSidebar = () => {
           </div>
         ))}
       </div>
+
+      <NavLink
+        to={path.PUBLIC}
+        className="block px-4 py-2 mt-4 text-center text-white rounded-md hover:underline"
+      >
+        Back to homepage
+      </NavLink>
     </div>
   );
 };

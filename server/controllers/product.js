@@ -16,7 +16,15 @@ const createProduct = asyncHandler(async (req, res) => {
 // lấy chi tiết 1 sản phẩm
 const detailProduct = asyncHandler(async (req, res) => {
   const { pid } = req.params;
-  const product = await Product.findById(pid);
+  const product = await Product.findById(pid).populate(
+    {
+      path: 'ratings',
+      populate: {
+        path: 'postedBy',
+        select: 'firstname lastname avatar'
+      }
+    }
+  );
   return res.status(200).json({
     success: product ? true : false,
     detail: product ? product : "Can't find a detail product",
@@ -24,13 +32,14 @@ const detailProduct = asyncHandler(async (req, res) => {
 });
 // lấy tất cả sản phẩm (filtering, sorting, pagination )
 const getAllProduct = asyncHandler(async (req, res) => {
-  // 2 object giống nhau là queries và req.query (copy req.query)
+  // Copy các query params từ req.query
   const queries = { ...req.query };
-  // Tách các trường đặc biệt ra khỏi query
-  const excludeFields = ["limit", "sort", "page", "fields"];
-  excludeFields.forEach((item) => delete queries[item]); // xóa các trường ra khỏi queries
 
-  // Format lại các operators cho đúng cú pháp của mongoose
+  // Lấy các trường không muốn đưa vào query
+  const excludeFields = ["limit", "sort", "page", "fields"];
+  excludeFields.forEach((item) => delete queries[item]); // Xóa các trường như limit, sort, page, fields
+
+  // Format lại các operator như gte, gt, lte cho đúng cú pháp mongoose
   let queryString = JSON.stringify(queries);
   queryString = queryString.replace(
     /\b(gte|gt|lt|lte)\b/g,
@@ -38,54 +47,66 @@ const getAllProduct = asyncHandler(async (req, res) => {
   );
   const formatQueryString = JSON.parse(queryString);
 
-  //Filtering
-  if (queries?.title)
-    formatQueryString.title = { $regex: queries.title, $options: "i" };
-  if (queries?.category)
+  // Filtering
+  if (queries?.title) {
+    formatQueryString.title = { $regex: queries.title, $options: "i" }; // Tìm kiếm không phân biệt hoa thường
+  }
+  if (queries?.category) {
     formatQueryString.category = { $regex: queries.category, $options: "i" };
+  }
   if (queries?.color) {
     formatQueryString.color = { $regex: queries.color, $options: "i" };
   }
 
-  let queryCommand = Product.find(formatQueryString);
+  // Lệnh tìm kiếm cơ bản với populate cho ratings và postedBy
+  let queryCommand = Product.find(formatQueryString)
+    .populate({
+      path: 'ratings',
+      populate: {
+        path: 'postedBy',
+        select: 'firstName lastName avatar', // Chọn các trường cần thiết của user
+      },
+    });
 
-  // sorting
+  // Sorting (Sắp xếp)
   if (req.query.sort) {
-    const sortBy = req.query.sort.split(",").join("");
-    queryCommand = queryCommand.sort(sortBy);
+    const sortBy = req.query.sort.split(",").join(" ");
+    queryCommand = queryCommand.sort(sortBy); // Sắp xếp theo các trường được chỉ định
   }
 
-  // Fields limiting
+  // Limiting fields (Giới hạn các trường)
   if (req.query.fields) {
-    const fieldsLimit = req.query.fields.split(",").join("");
-    queryCommand = queryCommand.select(fieldsLimit);
+    const fieldsLimit = req.query.fields.split(",").join(" ");
+    queryCommand = queryCommand.select(fieldsLimit); // Chỉ lấy các trường cần thiết
   }
 
-  // Pagination
-  // page=2&limit=10, 1-10 page 1, 11-20 page 2, 21-30 page 3
+  // Pagination (Phân trang)
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || process.env.LIMIT_PRODUCTS || 10;
   const skip = (page - 1) * limit;
+
   queryCommand = queryCommand.skip(skip).limit(limit);
 
-  // execute
-  queryCommand
-    .exec()
-    .then(async (response) => {
-      const counts = await Product.find(formatQueryString).countDocuments();
-      return res.status(200).json({
-        success: response ? true : false,
-        counts,
-        products: response ? response : "Can't find product",
-      });
-    })
-    .catch((err) => {
-      return res.status(500).json({
-        success: false,
-        message: err.message,
-      });
+  // Thực thi câu truy vấn
+  try {
+    const products = await queryCommand.exec();
+
+    // Đếm tổng số sản phẩm
+    const counts = await Product.find(formatQueryString).countDocuments();
+
+    return res.status(200).json({
+      success: true,
+      counts,
+      products: products.length > 0 ? products : "Can't find product",
     });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
 });
+
 // Cập nhật sản phẩm
 const updateProduct = asyncHandler(async (req, res) => {
   const { pid } = req.params;
@@ -115,37 +136,41 @@ const deleteProduct = asyncHandler(async (req, res) => {
 // ratings
 const ratingProduct = asyncHandler(async (req, res) => {
   const { _id } = req.user;
-  const { star, comment, pid } = req.body;
+  const { star, comment, pid, updatedAt } = req.body;
   if (!star || !pid) throw new Error("missing input");
-  // lấy object Product thông qua id
+
+  // Lấy object Product thông qua id
   const ratingProduct = await Product.findById(pid);
-  // Từ object Product, truy cập vào ratings property và lấy ra postedBy
-  // hàm some trả về true or false / find trả về cả object
+  // Từ object Product, truy cập vào ratings property và tìm đánh giá của người dùng
   const alreadyRating = ratingProduct?.ratings?.find(
     (el) => el.postedBy.toString() === _id
   );
-  console.log({ alreadyRating });
+
   if (alreadyRating) {
-    // update star & comment
+    // Nếu đã có đánh giá, chỉ cần cập nhật lại bình luận và sao
     await Product.updateOne(
-      // đứng ở bảng sản phẩm
-      { ratings: { $elemMatch: alreadyRating } }, // tìm pid sản phẩm
-      { $set: { "ratings.$.star": star, "ratings.$.comment": comment } }, // hàm $set của mongoose update sp
+      { ratings: { $elemMatch: alreadyRating } }, // tìm pid sản phẩm và rating của user
+      {
+        $set: {
+          "ratings.$.star": star,
+          "ratings.$.comment": comment,
+          "ratings.$.updatedAt": updatedAt,
+        },
+      },
       { new: true }
     );
   } else {
-    // add star and comment
+    // Nếu chưa có đánh giá, thêm bình luận và sao mới vào mảng ratings
     await Product.findByIdAndUpdate(
       pid,
-      // đối số muốn update
       {
-        $push: { ratings: { star, comment, postedBy: _id } }, // hàm $push của mongoose push obj vào obj
+        $push: { ratings: { star, comment, postedBy: _id, updatedAt } },
       },
       { new: true }
     );
   }
 
-  // sum ratings
+  // Cập nhật tổng số điểm đánh giá
   const updatedProduct = await Product.findById(pid);
   const ratingCount = updatedProduct.ratings.length;
   const sumRatings = updatedProduct?.ratings?.reduce(
@@ -154,9 +179,10 @@ const ratingProduct = asyncHandler(async (req, res) => {
   );
   updatedProduct.totalRating = Math.round((sumRatings * 10) / ratingCount) / 10;
 
-  await updatedProduct.save(); // lưu vào mongodb
+  await updatedProduct.save(); // Lưu vào MongoDB
   return res.status(200).json({ status: true, updatedProduct });
 });
+
 
 const uploadImageProduct = asyncHandler(async (req, res) => {
   const { pid } = req.params;

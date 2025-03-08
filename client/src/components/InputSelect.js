@@ -8,7 +8,7 @@ const InputSelect = ({ value, changevalue, option }) => {
       onChange={e => changevalue(e.target.value)}
     >
       <option value="" className="text-gray-500">
-        Choose filter
+        --- Choose Filter ---
       </option>
       {option?.map((el) => (
         <option key={el.id} value={el.value}>
